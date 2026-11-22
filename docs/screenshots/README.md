@@ -36,6 +36,11 @@ RPC. The defaults are "Learn automatically" (30 minutes to start) and 5 minutes.
   expired tooltip in dark), scaled to 2,000 px wide. It does not depict one
   application window.
 
+The expired-pill captures (`composer-expired-light.png`,
+`composer-expired-tooltip-dark.png`, the GIF's second part, and the right half
+of `marketplace-overview.png`) were taken before 0.1.0 removed the pulsing dot.
+The pill now keeps only its red background and border.
+
 BB's context meter sits in the composer footer; BB places plugin composer
 actions next to the microphone and send buttons. The live desktop can look
 different because of its width, theme, model, and thread states.

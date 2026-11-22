@@ -9,7 +9,7 @@ A [BB](https://getbb.app) plugin that compacts large idle Claude Code and Codex 
 
 Providers cache a conversation for a limited time: Claude Code reports 5 minutes or 1 hour; Codex does not report one, and the plugin assumes 30 minutes. Come back after that, and your next message re-reads every token of the context at full price, or from your plan's usage. Idle Compact compacts the thread just before the cache runs out, while compaction can still read cached tokens, and tells you in the composer what it is about to do.
 
-![Auto-compacts in 8m, then Compact 122K with a red dot, Compacting, and Compacted 122K to 19K](docs/screenshots/idle-compact-demo.gif)
+![Auto-compacts in 8m, then the red Compact 122K pill, Compacting, and Compacted 122K to 19K](docs/screenshots/idle-compact-demo.gif)
 
 The GIF records a disposable Codex thread in BB 0.50.1, in two parts joined with one cut, with a short test cache lifetime: **Auto-compacts → Compact → Compacting → Compacted**. [Capture details](docs/screenshots/README.md).
 
@@ -19,7 +19,7 @@ The GIF records a disposable Codex thread in BB 0.50.1, in two parts joined with
 | --- | --- |
 | **Compact before expiry** | An idle thread above your threshold is compacted a few minutes before its prompt cache expires. On by default, 5 minutes before. |
 | **Compact before sending** | If the cache already expired, the message you send waits while the thread compacts, then sends. On by default. |
-| **Composer pill** | "Auto-compacts in 23m" while the cache is warm, "Compact 412K" with a pulsing red dot once it expired, "Compacting" while it runs, and "Compacted 412K → 68K" until your next message. Click the first two to compact now. |
+| **Composer pill** | "Auto-compacts in 23m" while the cache is warm, "Compact 412K" in red once it expired, "Compacting" while it runs, and "Compacted 412K → 68K" until your next message. Click the first two to compact now. |
 | **Threshold** | A thread qualifies when its context is over a percentage of the model's window (20% by default) and at least 100K tokens. Below 100K, compacting costs about as much as it saves. |
 | **Stats** | The settings page shows the last 30 days: compactions, tokens not re-read, and compactions before expiry versus on return. |
 
@@ -29,13 +29,24 @@ Compaction uses BB's own `/compact`, the same as the composer command, and shows
 
 ## Installation
 
-Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases; there is no release yet.
+Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases.
+
+Install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases):
+
+```sh
+bb plugin install git:github.com/ysskrishna/bb-idle-compact@v0.1.0
+```
+
+BB shows the source for confirmation before installing it. The plugin ID is `bb-idle-compact`. Turn the plugin off or on with the switch on its page, **Settings > Idle Compact**.
+
+<details>
+<summary><b>Track development</b></summary>
 
 ```sh
 bb plugin install git:github.com/ysskrishna/bb-idle-compact@main
 ```
 
-BB shows the source for confirmation before installing it. The plugin ID is `bb-idle-compact`. Turn the plugin off or on with the switch on its page, **Settings > Idle Compact**.
+</details>
 
 ## See it in action
 
@@ -55,7 +66,7 @@ The pill counts down to the automatic compaction. Hover it for details; click it
 
 If nothing compacted the thread, the pill turns red. Your next message would re-read the whole context without the cache.
 
-![Compact 122K with a red dot, light theme](docs/screenshots/composer-expired-light.png)
+![Compact 122K in red, light theme](docs/screenshots/composer-expired-light.png)
 
 ![The expired pill's tooltip, dark theme](docs/screenshots/composer-expired-tooltip-dark.png)
 

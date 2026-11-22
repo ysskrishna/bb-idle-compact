@@ -135,7 +135,6 @@ export function CompactChip() {
         <button type="button" className="idle-compact-pill idle-compact-alert" onClick={compact}>
           <Icon name="Archive" aria-hidden className="size-3.5" />
           Compact {tokens}
-          <span aria-hidden="true" className="idle-compact-dot" />
         </button>
       </TooltipTrigger>
       <TooltipContent>

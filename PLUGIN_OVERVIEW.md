@@ -10,7 +10,7 @@ the cache.
 - **Compact before sending**: if the cache already expired, your next message
   waits while the thread compacts, then sends.
 - **A pill in the composer** that always says what happens next: "Auto-compacts
-  in 23m", "Compact 412K" with a red dot once the cache expired, "Compacting",
+  in 23m", "Compact 412K" in red once the cache expired, "Compacting",
   and "Compacted 412K → 68K".
 - A settings page with a percentage threshold (and a fixed 100K-token floor),
   per-provider overrides, and 30-day stats of tokens not re-read.
