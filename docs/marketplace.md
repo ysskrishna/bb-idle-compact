@@ -1,11 +1,9 @@
 # BB Community listing
 
-Idle Compact is not listed yet. The listing waits for a gains audit
-(`docs/gains-audit.md`, from one to two weeks of the plugin's own compaction
-log) that shows a real saving.
-
 The public registry is [get-bb/marketplace](https://github.com/get-bb/marketplace#submit-a-plugin).
-A reviewed pull request adds the plugin to BB Community.
+A reviewed pull request adds the plugin to BB Community. Version 0.1.0 is the
+first release submitted for listing. It is listed before a gains audit of the
+plugin's own compaction log; that audit can follow from real use.
 
 ## Submitting
 
@@ -27,7 +25,11 @@ A reviewed pull request adds the plugin to BB Community.
 A `range` source discovers stable version tags, so later compatible releases do
 not require editing the registry entry. Source, name, and branding changes do.
 
-## Registry entry (draft)
+## Registry entry
+
+The package, runtime, and marketplace share the `bb-idle-compact` identity.
+The `^0.1.0` range permits later 0.1.x releases; bump it in a registry PR when
+moving to 0.2.0.
 
 ```json
 {

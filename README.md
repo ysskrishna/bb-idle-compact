@@ -29,13 +29,24 @@ Compaction uses BB's own `/compact`, the same as the composer command, and shows
 
 ## Installation
 
-Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases; there is no release yet.
+Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases.
+
+Install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases):
+
+```sh
+bb plugin install git:github.com/ysskrishna/bb-idle-compact@v0.1.0
+```
+
+BB shows the source for confirmation before installing it. The plugin ID is `bb-idle-compact`. Turn the plugin off or on with the switch on its page, **Settings > Idle Compact**.
+
+<details>
+<summary><b>Track development</b></summary>
 
 ```sh
 bb plugin install git:github.com/ysskrishna/bb-idle-compact@main
 ```
 
-BB shows the source for confirmation before installing it. The plugin ID is `bb-idle-compact`. Turn the plugin off or on with the switch on its page, **Settings > Idle Compact**.
+</details>
 
 ## See it in action
 
