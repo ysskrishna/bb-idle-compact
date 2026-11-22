@@ -28,10 +28,13 @@ try {
       2,
     ),
   );
-  const keys = ["HOME", "PATH", "TMPDIR", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "BB_DATA_DIR", "BB_SERVER_URL"];
+  // The scratch environment holds paths and ports only; the API key never enters it.
   writeFileSync(
     resolve("e2e-artifacts/serve.env"),
-    `${keys.map((key) => `${key}=${server.env[key] ?? ""}`).join("\n")}\n`,
+    `${Object.entries(server.env)
+      .filter(([key]) => !/^npm_/i.test(key))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n")}\n`,
   );
   console.log(`SERVING: ${server.url} for ${minutes} minutes; details in e2e-artifacts/serve.json`);
   const until = Date.now() + minutes * 60_000;
