@@ -2,24 +2,23 @@
 import type { BbPluginApi } from "@get-bb/plugin-sdk";
 import { providerOf, type Settings, type ThreadFacts, ttlFor } from "./policy.js";
 
-export interface TokenUsageRow {
+interface TokenUsageRow {
   createdAt: number;
   inputTokens: number;
   cachedInputTokens: number;
   promptCacheTtlMs: number | null;
 }
 
-/** Token usage rows, newest first. */
-export async function tokenUsage(
-  bb: BbPluginApi,
-  threadId: string,
-  limit: number,
-): Promise<TokenUsageRow[]> {
+/** BB rejects event pages larger than this. */
+export const MAX_EVENT_PAGE = 100;
+
+/** Token usage rows, newest first, at most MAX_EVENT_PAGE. */
+export async function tokenUsage(bb: BbPluginApi, threadId: string, limit: number): Promise<TokenUsageRow[]> {
   const rows = await bb.sdk.threads.events.list({
     threadId,
     types: ["thread/tokenUsage/updated"],
     order: "desc",
-    limit: String(limit),
+    limit: String(Math.min(limit, MAX_EVENT_PAGE)),
   });
   return rows.flatMap((row) =>
     row.type === "thread/tokenUsage/updated"
@@ -35,10 +34,18 @@ export async function tokenUsage(
   );
 }
 
-async function lastTurnCompletedAt(
-  bb: BbPluginApi,
-  threadId: string,
-): Promise<number | null> {
+/** When the thread last reported a compaction, or null. */
+export async function lastCompactedAt(bb: BbPluginApi, threadId: string): Promise<number | null> {
+  const rows = await bb.sdk.threads.events.list({
+    threadId,
+    types: ["thread/compacted"],
+    order: "desc",
+    limit: "1",
+  });
+  return rows[0]?.createdAt ?? null;
+}
+
+async function lastTurnCompletedAt(bb: BbPluginApi, threadId: string): Promise<number | null> {
   const rows = await bb.sdk.threads.events.list({
     threadId,
     types: ["turn/completed"],
@@ -48,7 +55,7 @@ async function lastTurnCompletedAt(
   return rows[0]?.createdAt ?? null;
 }
 
-export interface LoadedFacts {
+interface LoadedFacts {
   facts: ThreadFacts;
   /** BB's own compactExpiredCache experiment is handling this thread's cold return. */
   builtinOffer: boolean;
@@ -72,21 +79,14 @@ export async function loadFacts(
   const last = usage[0] ?? null;
   // A turn's usage can be reported late or not at all, so the cache's last
   // use is the newer of the last usage report and the last finished turn.
-  const times = [last?.createdAt, lastTurnAt].filter(
-    (t): t is number => typeof t === "number",
-  );
+  const times = [last?.createdAt, lastTurnAt].filter((t): t is number => typeof t === "number");
   return {
     facts: {
       provider,
       usedTokens: context.usage.usedTokens,
       contextWindow: context.usage.modelContextWindow,
       lastUsageAt: times.length > 0 ? Math.max(...times) : null,
-      ttlMs: ttlFor(
-        provider,
-        settings,
-        last?.promptCacheTtlMs ?? null,
-        learnedTtlMs,
-      ),
+      ttlMs: ttlFor(provider, settings, last?.promptCacheTtlMs ?? null, learnedTtlMs),
     },
     builtinOffer: context.usage.compactionOfferAt !== undefined,
   };
