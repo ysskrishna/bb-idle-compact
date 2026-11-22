@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addObservation, estimateTtl, MAX_OBSERVATIONS, type Observation, observe } from "./ttl.js";
+import { addObservation, estimateTtl, MAX_OBSERVATIONS, type Observation, observe, summarize } from "./ttl.js";
 
 const MIN = 60_000;
 const hit = (gapMin: number): Observation => ({ gapMs: gapMin * MIN, hit: true, at: 0 });
@@ -34,5 +34,17 @@ describe("addObservation", () => {
     for (let i = 0; i < MAX_OBSERVATIONS + 5; i++) list = addObservation(list, hit(i + 10));
     expect(list).toHaveLength(MAX_OBSERVATIONS);
     expect(list[0]?.gapMs).toBe(15 * MIN);
+  });
+});
+
+describe("summarize", () => {
+  it("reports progress toward a learned lifetime", () => {
+    expect(summarize([hit(45), miss(10)])).toEqual({ learnedMinutes: null, longGapHits: 0, longGapHitsNeeded: 3 });
+    expect(summarize([hit(45)])).toEqual({ learnedMinutes: null, longGapHits: 1, longGapHitsNeeded: 3 });
+    expect(summarize([hit(45), hit(60), hit(130)])).toEqual({
+      learnedMinutes: 130,
+      longGapHits: 3,
+      longGapHitsNeeded: 3,
+    });
   });
 });
