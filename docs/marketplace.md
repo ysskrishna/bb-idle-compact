@@ -43,7 +43,7 @@ moving to 0.2.0.
     "github": "ysskrishna",
     "url": "https://ysskrishna.space"
   },
-  "category": "thread-management",
+  "category": "token-usage-and-limits",
   "overview": "./overview/bb-idle-compact.md",
   "screenshots": ["./screenshots/bb-idle-compact/overview.png"],
   "source": {
