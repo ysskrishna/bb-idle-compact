@@ -29,7 +29,8 @@ const IDLE_RETENTION_MS = 24 * 60 * 60_000;
 const SETTLE_TRIES = 10;
 const SETTLE_INTERVAL_MS = 1_500;
 
-type IdleRecords = Record<string, { at: number; providerId: string }>;
+/** `compacted`: the idle came from this plugin's compaction, so the next turn misses the cache by design. */
+type IdleRecords = Record<string, { at: number; providerId: string; compacted?: boolean }>;
 
 interface Running {
   kind: CompactionKind;
@@ -48,6 +49,8 @@ export default async function plugin(bb: BbPluginApi) {
   const warmTimers = new Map<string, ReturnType<typeof setTimeout>>();
   /** When a turn this plugin did not start last began, per thread. */
   const lastActive = new Map<string, number>();
+  /** Threads whose warm timer is checking whether to compact right now. */
+  const firing = new Set<string>();
 
   // Storage writes are read-modify-write; run them one at a time.
   let queue: Promise<unknown> = Promise.resolve();
@@ -162,6 +165,8 @@ export default async function plugin(bb: BbPluginApi) {
 
   async function recordCodexObservation(threadId: string, previousIdleAt: number) {
     const rows = await tokenUsage(bb, threadId, MAX_EVENT_PAGE);
+    // A full page that is all newer than the gap cannot show the first request after it.
+    if (rows.length === MAX_EVENT_PAGE && rows.every((r) => r.createdAt > previousIdleAt)) return;
     const first = rows.filter((r) => r.createdAt > previousIdleAt).at(-1);
     if (first === undefined) return;
     const next = observe(first.createdAt - previousIdleAt, first.inputTokens, first.cachedInputTokens, Date.now());
@@ -174,6 +179,8 @@ export default async function plugin(bb: BbPluginApi) {
     const entry = [...log].reverse().find((e) => e.threadId === threadId);
     if (entry === undefined || entry.returnedAt === null || entry.returnInputTokens !== null) return;
     const rows = await tokenUsage(bb, threadId, MAX_EVENT_PAGE);
+    const returnedAt = entry.returnedAt;
+    if (rows.length === MAX_EVENT_PAGE && rows.every((r) => r.createdAt >= returnedAt)) return;
     await serial(async () => {
       const next = fillReturnUsage(await readLog(), threadId, rows);
       if (next !== null) await kv.set(LOG_KEY, next);
@@ -194,6 +201,8 @@ export default async function plugin(bb: BbPluginApi) {
     const timing = await loadTiming(bb, threadId, providerId, s, await learnedTtl());
     if (timing === null) return;
     const dueAt = warmDueAt(timing.lastUsageAt, timing.ttlMs, s, Date.now());
+    // Another arm for this thread may have run during the awaits; keep one timer.
+    cancelWarm(threadId);
     if (dueAt === null) return;
     const timer = setTimeout(
       () => {
@@ -208,10 +217,20 @@ export default async function plugin(bb: BbPluginApi) {
   }
 
   async function warmFire(threadId: string, providerId: string, idleAt: number) {
+    if (firing.has(threadId)) return;
+    firing.add(threadId);
+    try {
+      await warmCheckAndStart(threadId, providerId, idleAt);
+    } finally {
+      firing.delete(threadId);
+    }
+  }
+
+  async function warmCheckAndStart(threadId: string, providerId: string, idleAt: number) {
     const idle = (await kv.get<IdleRecords>(IDLE_KEY)) ?? {};
     if (idle[threadId]?.at !== idleAt) return; // newer activity since
     const thread = await bb.sdk.threads.get({ threadId });
-    if (thread.status !== "idle" || running.has(threadId)) return;
+    if (thread.status !== "idle" || thread.archivedAt !== null || running.has(threadId)) return;
     const s = await settings.get();
     if (!s.warmIdle) return;
     const loaded = await loadFacts(bb, threadId, providerId, s, await learnedTtl());
@@ -233,6 +252,8 @@ export default async function plugin(bb: BbPluginApi) {
     cancelWarm(thread.id);
     if (!running.has(thread.id)) {
       lastActive.set(thread.id, Date.now());
+      // A held message that was sent another way, or deleted, never used its release.
+      if (gate.get(thread.id) === "done") gate.delete(thread.id);
       // A new turn after our compaction: the "Compacted" pill has done its job.
       await serial(async () => {
         const next = markReturned(await readLog(), thread.id, Date.now());
@@ -251,8 +272,8 @@ export default async function plugin(bb: BbPluginApi) {
     const now = Date.now();
     const previous = await serial(async () => {
       const idle = (await kv.get<IdleRecords>(IDLE_KEY)) ?? {};
-      const before = idle[id]?.at;
-      idle[id] = { at: now, providerId: thread.providerId };
+      const before = idle[id];
+      idle[id] = { at: now, providerId: thread.providerId, ...(run === undefined ? {} : { compacted: true }) };
       for (const [key, value] of Object.entries(idle)) {
         if (now - value.at > IDLE_RETENTION_MS) delete idle[key];
       }
@@ -269,11 +290,28 @@ export default async function plugin(bb: BbPluginApi) {
       return;
     }
     await recordReturnUsage(id).catch((error) => bb.log.warn(`could not read return usage of ${id}: ${String(error)}`));
-    if (providerOf(thread.providerId) === "codex" && previous !== undefined) {
-      await recordCodexObservation(id, previous);
+    // After a compaction the next request has a new prefix and misses the cache
+    // whatever the lifetime, so it says nothing about how long the cache lives.
+    if (providerOf(thread.providerId) === "codex" && previous !== undefined && !previous.compacted) {
+      await recordCodexObservation(id, previous.at);
     }
     await armWarm(id, thread.providerId, now, await settings.get());
     changed(id);
+  });
+
+  // A compaction that fails ends in an error, not idle: release any held
+  // message and clear the "Compacting" state.
+  bb.events.on("thread.failed", async ({ thread }) => {
+    const ours = running.delete(thread.id);
+    if (gate.get(thread.id) === "compacting") gate.set(thread.id, "done");
+    if (!ours) return;
+    bb.log.warn(`compaction of ${thread.id} failed`);
+    changed(thread.id);
+    await bb.experimental_hooks.recheck("message.dispatch");
+  });
+
+  bb.events.on("thread.archived", ({ thread }) => {
+    cancelWarm(thread.id);
   });
 
   // BB reports the context size a moment after a turn ends. Refresh the pill

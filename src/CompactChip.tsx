@@ -2,7 +2,7 @@
 // 412K...", or "Compacted 412K -> 68K, 1h ago". Nothing shows below the
 // threshold or on unsupported providers.
 import { useComposer, useRealtime, useRpc } from "@get-bb/plugin-sdk/app";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Icon } from "../components/ui/icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
@@ -15,9 +15,22 @@ const STATUS_CHANGED = "status-changed";
 function useThreadStatus(threadId: string | null) {
   const rpc = useRpc<typeof rpcContract>();
   const [status, setStatus] = useState<ThreadStatus | null>(null);
+  // Replies can arrive out of order; only the latest request may set the state.
+  const latest = useRef(0);
   const refetch = useCallback(() => {
-    if (threadId === null) return;
-    rpc.call("thread_status", { threadId }).then(setStatus, () => setStatus(null));
+    const request = ++latest.current;
+    if (threadId === null) {
+      setStatus(null);
+      return;
+    }
+    rpc.call("thread_status", { threadId }).then(
+      (next) => {
+        if (request === latest.current) setStatus(next);
+      },
+      () => {
+        if (request === latest.current) setStatus(null);
+      },
+    );
   }, [rpc, threadId]);
   useEffect(refetch, [refetch]);
   useRealtime(STATUS_CHANGED, (payload: unknown) => {
