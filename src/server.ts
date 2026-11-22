@@ -3,7 +3,7 @@
 // context at full price.
 import type { BbPluginApi, MessageDispatchHookDecision } from "@get-bb/plugin-sdk";
 import { rpcContract, SETTINGS_CHANGED, STATUS_CHANGED, type ThreadStatus } from "./contract.js";
-import { lastCompactedAt, loadFacts, MAX_EVENT_PAGE, tokenUsage } from "./server-facts.js";
+import { lastCompactedAt, loadFacts, loadTiming, MAX_EVENT_PAGE, tokenUsage } from "./server-facts.js";
 import { formatTokens } from "./format.js";
 import {
   addEntry,
@@ -14,7 +14,7 @@ import {
   markReturned,
   stats,
 } from "./log.js";
-import { evaluate, type Provider, providerOf, type Settings, warmDelayMs } from "./policy.js";
+import { evaluate, type Provider, providerOf, type Settings, warmDueAt } from "./policy.js";
 import { createSettingsStore } from "./server-settings.js";
 import { threadStatus } from "./status.js";
 import { addObservation, estimateTtl, type Observation, observe, summarize } from "./ttl.js";
@@ -25,6 +25,9 @@ const OBS_KEY = "observations:codex";
 const LOG_KEY = "log";
 /** Forget idle records older than this; their caches are long gone. */
 const IDLE_RETENTION_MS = 24 * 60 * 60_000;
+/** BB reports the context size a moment after a turn ends; wait up to 15 s for it. */
+const SETTLE_TRIES = 10;
+const SETTLE_INTERVAL_MS = 1_500;
 
 type IdleRecords = Record<string, { at: number; providerId: string }>;
 
@@ -43,6 +46,8 @@ export default async function plugin(bb: BbPluginApi) {
   /** Cold-return gate per thread: waiting on our compaction, or released. */
   const gate = new Map<string, "compacting" | "done">();
   const warmTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** When a turn this plugin did not start last began, per thread. */
+  const lastActive = new Map<string, number>();
 
   // Storage writes are read-modify-write; run them one at a time.
   let queue: Promise<unknown> = Promise.resolve();
@@ -78,30 +83,42 @@ export default async function plugin(bb: BbPluginApi) {
 
   /** Our compaction turn ended: log it if the context really was compacted. */
   async function finishCompaction(threadId: string, run: Running) {
-    const [context, compactedAt] = await Promise.all([
-      bb.sdk.threads.context({ threadId }),
-      lastCompactedAt(bb, threadId),
-    ]);
-    const after = context.usage?.usedTokens ?? null;
-    const compacted =
-      (compactedAt !== null && compactedAt >= run.startedAt) || (after !== null && after < run.tokensBefore);
+    let after: number | null = null;
+    let compacted = false;
+    for (let attempt = 0; attempt < SETTLE_TRIES; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, SETTLE_INTERVAL_MS));
+      const [context, compactedAt] = await Promise.all([
+        bb.sdk.threads.context({ threadId }),
+        lastCompactedAt(bb, threadId),
+      ]);
+      after = context.usage?.usedTokens ?? null;
+      compacted =
+        (compactedAt !== null && compactedAt >= run.startedAt) || (after !== null && after < run.tokensBefore);
+      if (after !== null && after < run.tokensBefore) break;
+    }
     if (!compacted || after === null) {
       bb.log.warn(`compaction of ${threadId} ended without a smaller context`);
       return;
     }
-    const now = Date.now();
-    const entry: LogEntry = {
-      threadId,
-      provider: run.provider,
-      kind: run.kind,
-      tokensBefore: run.tokensBefore,
-      tokensAfter: after,
-      at: now,
-      returnedAt: null,
-      returnInputTokens: null,
-      returnCachedInputTokens: null,
-    };
-    await serial(async () => kv.set(LOG_KEY, addEntry(await readLog(), entry, now)));
+    const tokensAfter = after;
+    await serial(async () => {
+      const now = Date.now();
+      // A message sent while waiting for the size already ended the "Compacted" state.
+      const startedAt = lastActive.get(threadId);
+      const entry: LogEntry = {
+        threadId,
+        provider: run.provider,
+        kind: run.kind,
+        tokensBefore: run.tokensBefore,
+        tokensAfter,
+        at: now,
+        returnedAt: startedAt !== undefined && startedAt > run.startedAt ? startedAt : null,
+        returnInputTokens: null,
+        returnCachedInputTokens: null,
+      };
+      await kv.set(LOG_KEY, addEntry(await readLog(), entry, now));
+    });
+    changed(threadId);
     bb.realtime.publish(SETTINGS_CHANGED, {});
   }
 
@@ -172,12 +189,12 @@ export default async function plugin(bb: BbPluginApi) {
   async function armWarm(threadId: string, providerId: string, idleAt: number, s: Settings) {
     cancelWarm(threadId);
     if (!s.warmIdle) return;
-    const loaded = await loadFacts(bb, threadId, providerId, s, await learnedTtl());
-    if (loaded === null) return;
-    const verdict = evaluate(loaded.facts, s, Date.now());
-    const delay = warmDelayMs(loaded.facts.ttlMs, s);
-    if (!verdict.qualifies || verdict.expired || delay === null) return;
-    const dueAt = (loaded.facts.lastUsageAt ?? idleAt) + delay;
+    // Arm from cache timing alone: BB reports the context size a moment after
+    // the turn ends, so the size is checked when the timer fires.
+    const timing = await loadTiming(bb, threadId, providerId, s, await learnedTtl());
+    if (timing === null) return;
+    const dueAt = warmDueAt(timing.lastUsageAt, timing.ttlMs, s, Date.now());
+    if (dueAt === null) return;
     const timer = setTimeout(
       () => {
         warmTimers.delete(threadId);
@@ -215,6 +232,7 @@ export default async function plugin(bb: BbPluginApi) {
   bb.events.on("thread.active", async ({ thread }) => {
     cancelWarm(thread.id);
     if (!running.has(thread.id)) {
+      lastActive.set(thread.id, Date.now());
       // A new turn after our compaction: the "Compacted" pill has done its job.
       await serial(async () => {
         const next = markReturned(await readLog(), thread.id, Date.now());
@@ -242,11 +260,12 @@ export default async function plugin(bb: BbPluginApi) {
       return before;
     });
     if (run !== undefined) {
-      await finishCompaction(id, run).catch((error) =>
-        bb.log.warn(`could not log compaction of ${id}: ${String(error)}`),
-      );
+      // Release a held message first; logging waits for BB's settled size.
       changed(id);
       await bb.experimental_hooks.recheck("message.dispatch");
+      void finishCompaction(id, run).catch((error) =>
+        bb.log.warn(`could not log compaction of ${id}: ${String(error)}`),
+      );
       return;
     }
     await recordReturnUsage(id).catch((error) => bb.log.warn(`could not read return usage of ${id}: ${String(error)}`));
@@ -255,6 +274,12 @@ export default async function plugin(bb: BbPluginApi) {
     }
     await armWarm(id, thread.providerId, now, await settings.get());
     changed(id);
+  });
+
+  // BB reports the context size a moment after a turn ends. Refresh the pill
+  // when an idle thread gets such a late update.
+  bb.events.on("experimental_thread.events", ({ thread }) => {
+    if (thread.status === "idle" && providerOf(thread.providerId) !== null) changed(thread.id);
   });
 
   async function statusOf(threadId: string): Promise<ThreadStatus> {

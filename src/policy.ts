@@ -95,7 +95,19 @@ export function evaluate(facts: ThreadFacts, settings: Settings, now: number): V
  * How long after the cache's last use to compact while it is still warm, or
  * null when the margin leaves no time before expiry.
  */
-export function warmDelayMs(ttlMs: number, settings: Settings): number | null {
+function warmDelayMs(ttlMs: number, settings: Settings): number | null {
   const delay = ttlMs - settings.idleMarginMinutes * 60_000;
   return delay > 0 ? delay : null;
+}
+
+/**
+ * When to compact an idle thread before its cache expires, or null when that
+ * is off, impossible, or too late. Whether the thread is large enough is
+ * checked separately, when the time comes.
+ */
+export function warmDueAt(lastUsageAt: number | null, ttlMs: number, settings: Settings, now: number): number | null {
+  if (!settings.warmIdle || lastUsageAt === null) return null;
+  const delay = warmDelayMs(ttlMs, settings);
+  if (delay === null || now >= lastUsageAt + ttlMs) return null;
+  return lastUsageAt + delay;
 }

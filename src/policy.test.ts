@@ -8,7 +8,7 @@ import {
   type Settings,
   thresholdFor,
   ttlFor,
-  warmDelayMs,
+  warmDueAt,
 } from "./policy.js";
 
 const MIN = 60_000;
@@ -69,9 +69,15 @@ describe("evaluate", () => {
   });
 });
 
-describe("warmDelayMs", () => {
+describe("warmDueAt", () => {
   it("compacts the margin before expiry, or not at all when there is no room", () => {
-    expect(warmDelayMs(60 * MIN, s({ idleMarginMinutes: 5 }))).toBe(55 * MIN);
-    expect(warmDelayMs(5 * MIN, s({ idleMarginMinutes: 5 }))).toBeNull();
+    expect(warmDueAt(0, 60 * MIN, s({ idleMarginMinutes: 5 }), 0)).toBe(55 * MIN);
+    expect(warmDueAt(0, 5 * MIN, s({ idleMarginMinutes: 5 }), 0)).toBeNull();
+  });
+  it("needs a known last use, the switch on, and a cache that has not expired", () => {
+    expect(warmDueAt(null, 60 * MIN, s(), 0)).toBeNull();
+    expect(warmDueAt(0, 60 * MIN, s({ warmIdle: false }), 0)).toBeNull();
+    expect(warmDueAt(0, 60 * MIN, s(), 60 * MIN)).toBeNull();
+    expect(warmDueAt(0, 60 * MIN, s(), 57 * MIN)).toBe(55 * MIN);
   });
 });

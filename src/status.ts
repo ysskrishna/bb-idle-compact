@@ -1,7 +1,7 @@
 // What the composer shows for one thread. Pure, so every state is unit-tested.
 import type { ThreadStatus } from "./contract.js";
 import type { LogEntry } from "./log.js";
-import { evaluate, type Settings, type ThreadFacts, warmDelayMs } from "./policy.js";
+import { evaluate, type Settings, type ThreadFacts, warmDueAt } from "./policy.js";
 
 export interface StatusInput {
   settings: Settings;
@@ -37,12 +37,7 @@ export function threadStatus(input: StatusInput): ThreadStatus {
     if (facts.provider === "claude" && input.builtinOffer) return { state: "none" };
     return { state: "expired", usedTokens: facts.usedTokens, expiresAt: verdict.expiresAt };
   }
-  const delay = warmDelayMs(facts.ttlMs, settings);
-  if (!settings.warmIdle || delay === null || facts.lastUsageAt === null) return { state: "none" };
-  return {
-    state: "scheduled",
-    usedTokens: facts.usedTokens,
-    warmAt: facts.lastUsageAt + delay,
-    expiresAt: verdict.expiresAt,
-  };
+  const warmAt = warmDueAt(facts.lastUsageAt, facts.ttlMs, settings, input.now);
+  if (warmAt === null) return { state: "none" };
+  return { state: "scheduled", usedTokens: facts.usedTokens, warmAt, expiresAt: verdict.expiresAt };
 }
