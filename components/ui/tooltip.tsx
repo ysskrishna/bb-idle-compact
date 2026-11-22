@@ -5,8 +5,6 @@ import { cn } from "../../lib/utils";
 import { usePortalScopeProps } from "../../lib/portal-scope";
 import { isLastInputKeyboard } from "./overlay-trigger.js";
 
-const TooltipProvider = TooltipPrimitive.Provider;
-
 const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = React.forwardRef<
@@ -32,13 +30,7 @@ const TooltipContent = React.forwardRef<
   React.ComponentRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(function TooltipContentComponent(
-  {
-    avoidCollisions = true,
-    className,
-    collisionPadding = 8,
-    sideOffset = 4,
-    ...props
-  },
+  { avoidCollisions = true, className, collisionPadding = 8, sideOffset = 4, ...props },
   ref,
 ) {
   return (
@@ -60,4 +52,4 @@ const TooltipContent = React.forwardRef<
 });
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+export { Tooltip, TooltipTrigger, TooltipContent };
