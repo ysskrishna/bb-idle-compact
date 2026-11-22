@@ -1,7 +1,8 @@
 // Short labels shared by the server's messages and the composer pills.
 
-/** 412K, 1.2M. */
+/** 412K, 1.2M; small counts as they are. */
 export function formatTokens(tokens: number): string {
+  if (tokens < 1000) return String(tokens);
   if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
   return `${Math.round(tokens / 1000)}K`;
 }

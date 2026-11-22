@@ -104,7 +104,9 @@ export function CompactChip() {
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          <p className="font-medium">Prompt cache warm for {pluralMinutes(warmFor)} more.</p>
+          <p className="font-medium">
+            Prompt cache warm for {warmFor} more {warmFor === 1 ? "minute" : "minutes"}.
+          </p>
           <p>
             If you stay away, this thread is compacted {pluralMinutes(margin)} before the cache expires, while the
             compaction can still read cached tokens. Click to compact {tokens} now.

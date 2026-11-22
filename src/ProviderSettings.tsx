@@ -51,9 +51,11 @@ export function ProviderSettings({
   );
   return (
     <details open className="rounded-lg border border-border px-4 py-3">
-      <summary className="flex cursor-pointer items-center justify-between gap-3 rounded text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <summary className="cursor-pointer rounded text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         Per provider
-        <SaveIndicator status={status} />
+        <span className="float-right">
+          <SaveIndicator status={status} />
+        </span>
       </summary>
       <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2.5 text-xs">
         {threshold("claudeThreshold", "Claude Code threshold")}

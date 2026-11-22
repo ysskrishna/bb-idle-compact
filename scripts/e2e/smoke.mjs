@@ -21,7 +21,6 @@ try {
   };
 
   assert.deepEqual(await call("get_settings", {}), {
-    enabled: true,
     warmIdle: true,
     coldReturn: true,
     threshold: 20,

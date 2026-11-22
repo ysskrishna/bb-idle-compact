@@ -118,7 +118,7 @@ export default async function plugin(bb: BbPluginApi) {
       return { action: "wait", reason: "Compacting the expired context first" };
     }
     const s = await settings.get();
-    if (!s.enabled || !s.coldReturn) return PROCEED;
+    if (!s.coldReturn) return PROCEED;
     if (ctx.thread.status !== "idle" || providerOf(ctx.thread.providerId) === null) return PROCEED;
     try {
       const loaded = await loadFacts(bb, id, ctx.thread.providerId, s, await learnedTtl());
@@ -171,7 +171,7 @@ export default async function plugin(bb: BbPluginApi) {
 
   async function armWarm(threadId: string, providerId: string, idleAt: number, s: Settings) {
     cancelWarm(threadId);
-    if (!s.enabled || !s.warmIdle) return;
+    if (!s.warmIdle) return;
     const loaded = await loadFacts(bb, threadId, providerId, s, await learnedTtl());
     if (loaded === null) return;
     const verdict = evaluate(loaded.facts, s, Date.now());
@@ -196,7 +196,7 @@ export default async function plugin(bb: BbPluginApi) {
     const thread = await bb.sdk.threads.get({ threadId });
     if (thread.status !== "idle" || running.has(threadId)) return;
     const s = await settings.get();
-    if (!s.enabled || !s.warmIdle) return;
+    if (!s.warmIdle) return;
     const loaded = await loadFacts(bb, threadId, providerId, s, await learnedTtl());
     if (loaded === null) return;
     const verdict = evaluate(loaded.facts, s, Date.now());
@@ -263,7 +263,7 @@ export default async function plugin(bb: BbPluginApi) {
     const run = running.get(threadId);
     const awaiting = awaitingReturn(await readLog(), threadId);
     const loaded =
-      s.enabled && run === undefined && awaiting === null
+      run === undefined && awaiting === null
         ? await loadFacts(bb, threadId, thread.providerId, s, await learnedTtl())
         : null;
     return threadStatus({

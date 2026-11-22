@@ -71,8 +71,7 @@ describe("threadStatus", () => {
       at: 5,
     });
   });
-  it("shows nothing when off, running, small, unsupported, or never used", () => {
-    expect(threadStatus(input({}, { enabled: false }))).toEqual({ state: "none" });
+  it("shows nothing when running, small, unsupported, or never used", () => {
     expect(threadStatus(input({ idle: false }))).toEqual({ state: "none" });
     expect(threadStatus(input({ facts: { ...facts, usedTokens: 90_000 } }))).toEqual({ state: "none" });
     expect(threadStatus(input({}, { threshold: 90 }))).toEqual({ state: "none" });

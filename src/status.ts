@@ -20,7 +20,6 @@ export interface StatusInput {
 
 export function threadStatus(input: StatusInput): ThreadStatus {
   const { settings, facts } = input;
-  if (!settings.enabled) return { state: "none" };
   if (input.compactingTokens !== null) return { state: "compacting", usedTokens: input.compactingTokens };
   if (input.awaiting !== null) {
     return {

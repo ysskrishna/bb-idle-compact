@@ -5,6 +5,7 @@ const MIN = 60_000;
 
 describe("format", () => {
   it("formats token counts", () => {
+    expect(formatTokens(0)).toBe("0");
     expect(formatTokens(412_300)).toBe("412K");
     expect(formatTokens(100_000)).toBe("100K");
     expect(formatTokens(1_000_000)).toBe("1M");

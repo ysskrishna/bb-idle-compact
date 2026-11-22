@@ -4,19 +4,10 @@
 import { experimental_useExperiment, useRealtime, useRpc } from "@get-bb/plugin-sdk/app";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Icon } from "../components/ui/icon";
 import type { rpcContract, Stats } from "./contract";
 import { formatTokens } from "./format";
 import type { Settings } from "./policy";
-import {
-  InlineNumber,
-  SaveIndicator,
-  type SaveStatus,
-  SettingRow,
-  SettingsSection,
-  Switch,
-  SwitchRow,
-} from "./settings-ui";
+import { InlineNumber, SaveIndicator, type SaveStatus, SettingRow, SettingsSection, SwitchRow } from "./settings-ui";
 import { ProviderSettings } from "./ProviderSettings";
 
 const SETTINGS_CHANGED = "settings-changed";
@@ -24,9 +15,8 @@ const SETTINGS_CHANGED = "settings-changed";
 const SAVE_DELAY_MS = 500;
 const SAVED_VISIBLE_MS = 2_000;
 
-type Section = "header" | "automatic" | "provider" | "advanced";
+type Section = "automatic" | "provider" | "advanced";
 const SECTION_OF: Record<keyof Settings, Section> = {
-  enabled: "header",
   warmIdle: "automatic",
   coldReturn: "automatic",
   threshold: "automatic",
@@ -55,7 +45,7 @@ export function SettingsPage() {
   draftRef.current = draft;
   /** Edited fields not yet saved, so a reload does not overwrite them. */
   const dirty = useRef(new Set<keyof Settings>());
-  const lastSection = useRef<Section>("header");
+  const lastSection = useRef<Section>("automatic");
   const [edits, setEdits] = useState(0);
 
   const load = useCallback(async () => {
@@ -126,22 +116,6 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-3xl space-y-6 pb-4">
-      <div className="flex items-start gap-3">
-        <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-border">
-          <Icon name="Archive" aria-hidden className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold text-foreground">Idle Compact</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Compacts large idle Claude Code and Codex threads before their prompt cache expires.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <SaveIndicator status={statusFor("header")} />
-          <Switch label="Idle Compact" checked={draft.enabled} onChange={(on) => update("enabled", on)} />
-        </div>
-      </div>
-
       <div>
         <SettingsSection title="Automatic compaction" status={statusFor("automatic")}>
           <SwitchRow
@@ -192,9 +166,11 @@ export function SettingsPage() {
       />
 
       <details className="rounded-lg border border-border px-4 py-3">
-        <summary className="flex cursor-pointer items-center justify-between gap-3 rounded text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <summary className="cursor-pointer rounded text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Advanced settings
-          <SaveIndicator status={statusFor("advanced")} />
+          <span className="float-right">
+            <SaveIndicator status={statusFor("advanced")} />
+          </span>
         </summary>
         <div className="mt-3">
           <InlineNumber

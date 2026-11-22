@@ -11,7 +11,6 @@ export const CODEX_DEFAULT_TTL_MS = 30 * 60_000;
 export type Provider = "claude" | "codex";
 
 export interface Settings {
-  enabled: boolean;
   threshold: number;
   warmIdle: boolean;
   coldReturn: boolean;
@@ -22,7 +21,6 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  enabled: true,
   threshold: 20,
   warmIdle: true,
   coldReturn: true,

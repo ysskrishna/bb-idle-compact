@@ -99,7 +99,7 @@ export function SettingRow({
   );
 }
 
-export function Switch({
+function Switch({
   checked,
   disabled,
   label,

@@ -6,7 +6,6 @@ import { z } from "zod";
 const percent = z.number().int().min(0).max(100);
 
 export const settingsSchema = z.object({
-  enabled: z.boolean(),
   warmIdle: z.boolean(),
   coldReturn: z.boolean(),
   /** Percent of the model's context window, 1-100. */

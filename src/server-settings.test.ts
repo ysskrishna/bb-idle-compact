@@ -5,7 +5,6 @@ import { parseStoredSettings } from "./server-settings.js";
 describe("parseStoredSettings", () => {
   it("uses the approved defaults when nothing is stored", () => {
     expect(parseStoredSettings(undefined)).toEqual({
-      enabled: true,
       warmIdle: true,
       coldReturn: true,
       threshold: 20,
