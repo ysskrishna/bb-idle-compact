@@ -2,7 +2,7 @@
 // when to compact. No BB APIs here, so every rule is unit-tested directly.
 
 /** Below this many tokens, compacting costs about as much as it saves. */
-export const MIN_TOKENS = 100_000;
+const MIN_TOKENS = 100_000;
 /** Claude Code reports its cache lifetime; this is the fallback when it has not yet. */
 export const CLAUDE_FALLBACK_TTL_MS = 5 * 60_000;
 /** Codex does not report a cache lifetime; GPT-6.x defaults to 30 minutes. */
@@ -12,7 +12,6 @@ export type Provider = "claude" | "codex";
 
 export interface Settings {
   enabled: boolean;
-  mode: "auto" | "button";
   threshold: number;
   warmIdle: boolean;
   coldReturn: boolean;
@@ -24,7 +23,6 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
-  mode: "auto",
   threshold: 20,
   warmIdle: true,
   coldReturn: true,
@@ -43,8 +41,7 @@ export function providerOf(providerId: string): Provider | null {
 
 /** The provider override when set (1-100), otherwise the global threshold. */
 export function thresholdFor(settings: Settings, provider: Provider): number {
-  const override =
-    provider === "claude" ? settings.claudeThreshold : settings.codexThreshold;
+  const override = provider === "claude" ? settings.claudeThreshold : settings.codexThreshold;
   return override > 0 ? override : settings.threshold;
 }
 
@@ -72,7 +69,7 @@ export interface ThreadFacts {
   ttlMs: number;
 }
 
-export interface Verdict {
+interface Verdict {
   usedPct: number;
   thresholdPct: number;
   /** Large enough, by the threshold and the 100K floor, to be worth compacting. */
@@ -82,17 +79,11 @@ export interface Verdict {
   expired: boolean;
 }
 
-export function evaluate(
-  facts: ThreadFacts,
-  settings: Settings,
-  now: number,
-): Verdict {
-  const usedPct =
-    facts.contextWindow > 0 ? (facts.usedTokens / facts.contextWindow) * 100 : 0;
+export function evaluate(facts: ThreadFacts, settings: Settings, now: number): Verdict {
+  const usedPct = facts.contextWindow > 0 ? (facts.usedTokens / facts.contextWindow) * 100 : 0;
   const thresholdPct = thresholdFor(settings, facts.provider);
   const qualifies = facts.usedTokens >= MIN_TOKENS && usedPct >= thresholdPct;
-  const expiresAt =
-    facts.lastUsageAt === null ? null : facts.lastUsageAt + facts.ttlMs;
+  const expiresAt = facts.lastUsageAt === null ? null : facts.lastUsageAt + facts.ttlMs;
   return {
     usedPct,
     thresholdPct,
