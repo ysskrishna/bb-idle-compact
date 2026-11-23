@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Made the scratch e2e smoke pass on GitHub's Linux runners by re-stopping the idle fixture thread until it is idle, and run it on pull requests that touch it.
+- Made the scratch e2e smoke pass on GitHub's Linux runners: the fixture thread is now spawned scheduled, so it never starts a Codex turn, and the e2e workflow runs on pull requests that touch it.
 
 ### Changed
 
