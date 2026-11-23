@@ -27,3 +27,14 @@ test("seed events reject agent output, turns, and provider errors", () => {
     ["item/completed", "turn/started", "provider/error"],
   );
 });
+
+test("seed events reject unmapped notifications that report agent activity", () => {
+  assert.deepEqual(
+    types([
+      { type: "provider/unhandled", data: { rawType: "item/reasoning/summaryPartAdded" } },
+      { type: "provider/unhandled", data: { rawType: "command/exec/outputDelta" } },
+      { type: "provider/unhandled", data: {} },
+    ]),
+    ["provider/unhandled", "provider/unhandled"],
+  );
+});
