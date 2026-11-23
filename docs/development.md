@@ -33,6 +33,8 @@ env -i PATH="$PATH" HOME="$HOME" npm run e2e:smoke
 
 CI runs the same smoke test in the "Scratch e2e" workflow, on manual dispatch and on pull requests that touch e2e scripts, the workflow or plugin source.
 
+The weekly "BB compat" workflow (from [bb-plugin-ci](https://github.com/ysskrishna/bb-plugin-ci)) runs `typecheck` and `e2e:smoke` against any newer BB outside `engines.bb` and reports the result in a `bb-compat` issue.
+
 ## README media
 
 `npm run e2e:serve` keeps a scratch BB running (120 minutes by default) and
