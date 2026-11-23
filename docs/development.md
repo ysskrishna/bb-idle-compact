@@ -31,7 +31,7 @@ It needs the Codex CLI on `PATH`.
 env -i PATH="$PATH" HOME="$HOME" npm run e2e:smoke
 ```
 
-CI runs the same smoke test from the manual "Scratch e2e" workflow.
+CI runs the same smoke test in the "Scratch e2e" workflow, on manual dispatch and on pull requests that touch e2e scripts, the workflow or plugin source.
 
 ## README media
 
