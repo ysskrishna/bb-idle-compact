@@ -147,7 +147,7 @@ export async function startScratchServer({ projectName = "Idle Compact smoke", o
       const codex = await run("codex", ["--version"], { timeoutMs: 10_000 });
       console.log(`FIXTURE PROVIDER: ${codex.stdout.trim()}`);
     } catch (cause) {
-      throw new Error("Browser fixtures require Codex on PATH. Install @openai/codex@0.162.1 before running e2e.", {
+      throw new Error("Browser fixtures require Codex on PATH. Install @openai/codex@0.169.0 before running e2e.", {
         cause,
       });
     }
@@ -345,8 +345,18 @@ trace_exporter = "none"
       const id = data.id ?? data.thread?.id;
       if (!id) throw new Error("Scratch thread returned no id");
       if (idle) {
-        await cli(["thread", "stop", id, "--json"]);
-        await cli(["thread", "wait", id, "--status", "idle", "--timeout", "30s", "--json"]);
+        // On the Linux runner the first stop can land while the thread is still provisioning; the
+        // provider runtime then loads anyway and the thread stays active. Stopping again once it
+        // has loaded releases it, so retry the stop instead of waiting out a single long timeout.
+        let idleReached = false;
+        for (let attempt = 0; attempt < 4 && !idleReached; attempt += 1) {
+          await cli(["thread", "stop", id, "--json"]);
+          const waited = await cli(["thread", "wait", id, "--status", "idle", "--timeout", "8s", "--json"], {
+            allowFailure: true,
+          });
+          idleReached = waited.code === 0;
+        }
+        if (!idleReached) throw new Error(`Idle fixture ${id} never reached idle after repeated stops`);
         const { thread } = JSON.parse((await cli(["thread", "get", id, "--json"])).stdout);
         if (!thread.environmentId || thread.queuedMessageCount) throw new Error("Idle fixture is not initialized");
         const events = JSON.parse((await cli(["thread", "log", id, "--json"])).stdout);

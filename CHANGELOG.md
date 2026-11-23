@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Made the scratch e2e smoke pass on GitHub's Linux runners by re-stopping the idle fixture thread until it is idle, and run it on pull requests that touch it.
+
 ### Changed
 
 - Moved the GitHub release install into a collapsed "Install a specific release from GitHub" section in the README.
