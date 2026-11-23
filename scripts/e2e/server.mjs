@@ -17,6 +17,7 @@ import { join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { createIsolationGuard } from "./isolation.mjs";
 import { createScratchKeychain } from "./keychain.mjs";
+import { unexpectedSeedEvents } from "./seed-events.mjs";
 
 /**
  * Starts a disposable BB server with this plugin installed. `openaiKeyFile`
@@ -353,14 +354,7 @@ trace_exporter = "none"
         const { thread } = JSON.parse((await cli(["thread", "get", id, "--json"])).stdout);
         if (thread.queuedMessageCount) throw new Error("Idle fixture still has a queued message");
         const events = JSON.parse((await cli(["thread", "log", id, "--json"])).stdout);
-        const unexpected = events.filter((event) => {
-          if (event.type.startsWith("item/") || event.type.startsWith("turn/")) return true;
-          if (!event.type.startsWith("provider/")) return false;
-          return (
-            event.type !== "provider/warning" &&
-            !(event.type === "provider/unhandled" && event.data.rawType === "account/updated")
-          );
-        });
+        const unexpected = unexpectedSeedEvents(events);
         console.log(
           `FIXTURE THREAD: status ${thread.status}; events ${events.map((event) => event.type).join(", ") || "none"}`,
         );

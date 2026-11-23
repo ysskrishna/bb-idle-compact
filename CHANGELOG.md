@@ -4,6 +4,7 @@
 
 ### Changed
 
+- The scratch e2e seed tolerates any provider notification that BB does not map (`provider/unhandled`), so a newer Codex CLI cannot fail the smoke test. Agent output, turns and provider errors still fail it.
 - CI installs the latest Codex CLI for the scratch e2e and BB compat runs instead of a pinned version, and the e2e error text no longer names a version.
 
 ## [0.1.1]
