@@ -147,7 +147,7 @@ export async function startScratchServer({ projectName = "Idle Compact smoke", o
       const codex = await run("codex", ["--version"], { timeoutMs: 10_000 });
       console.log(`FIXTURE PROVIDER: ${codex.stdout.trim()}`);
     } catch (cause) {
-      throw new Error("Browser fixtures require Codex on PATH. Install @openai/codex@0.162.1 before running e2e.", {
+      throw new Error("Browser fixtures require Codex on PATH. Install @openai/codex@0.169.0 before running e2e.", {
         cause,
       });
     }
@@ -333,31 +333,37 @@ trace_exporter = "none"
         "--title",
         title,
         "--prompt",
-        idle ? "" : "Scratch scheduled e2e fixture",
+        "Scratch scheduled e2e fixture",
         "--provider",
         "codex",
         "--model",
         "gpt-5",
-        ...(idle ? ["--environment", repo] : ["--send-at", "7d"]),
+        ...(idle ? ["--environment", repo, "--send-at", "7d"] : ["--send-at", "7d"]),
         "--json",
       ]);
       const data = JSON.parse(result.stdout);
       const id = data.id ?? data.thread?.id;
       if (!id) throw new Error("Scratch thread returned no id");
       if (idle) {
-        await cli(["thread", "stop", id, "--json"]);
-        await cli(["thread", "wait", id, "--status", "idle", "--timeout", "30s", "--json"]);
+        // A scheduled spawn creates the thread without starting a provider turn. (An immediate
+        // empty-prompt spawn raced with `thread stop` on Linux and the codex turn hit the OpenAI API.)
+        // Dropping the queued message leaves a thread that never ran a turn.
+        const queued = JSON.parse((await cli(["thread", "queue", "list", id, "--json"])).stdout);
+        for (const message of queued) await cli(["thread", "queue", "delete", id, message.id, "--json"]);
         const { thread } = JSON.parse((await cli(["thread", "get", id, "--json"])).stdout);
-        if (!thread.environmentId || thread.queuedMessageCount) throw new Error("Idle fixture is not initialized");
+        if (thread.queuedMessageCount) throw new Error("Idle fixture still has a queued message");
         const events = JSON.parse((await cli(["thread", "log", id, "--json"])).stdout);
         const unexpected = events.filter((event) => {
-          if (event.type.startsWith("item/")) return true;
+          if (event.type.startsWith("item/") || event.type.startsWith("turn/")) return true;
           if (!event.type.startsWith("provider/")) return false;
           return (
             event.type !== "provider/warning" &&
             !(event.type === "provider/unhandled" && event.data.rawType === "account/updated")
           );
         });
+        console.log(
+          `FIXTURE THREAD: status ${thread.status}; events ${events.map((event) => event.type).join(", ") || "none"}`,
+        );
         if (unexpected.length) {
           throw new Error(
             `Fixture unexpectedly produced agent output or provider errors: ${unexpected.map((event) => event.type).join(", ")}`,

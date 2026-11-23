@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Made the scratch e2e smoke pass on GitHub's Linux runners: the fixture thread is now spawned scheduled, so it never starts a Codex turn, the Codex version in the e2e error text now matches the workflow pin (0.169.0), and the e2e workflow runs on pull requests that touch it.
+
 ### Changed
 
 - Moved the GitHub release install into a collapsed "Install a specific release from GitHub" section in the README.

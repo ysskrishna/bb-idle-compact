@@ -1,6 +1,6 @@
 // Installs the plugin on an isolated scratch BB and checks its RPCs end to
 // end: default settings, saving and rejecting values, stats, and the status of
-// a fresh idle Codex thread. No browser and no provider credentials needed.
+// a scheduled Codex thread that never ran a turn. No browser and no provider credentials needed.
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -47,7 +47,7 @@ try {
   assert.deepEqual(await call("thread_status", { threadId: thread.id }), { state: "none" });
   const compact = await call("compact_now", { threadId: thread.id });
   assert.equal(compact.ok, false, "an empty thread has nothing to compact");
-  assert.ok(compact.message, "a failed compaction explains why");
+  assert.equal(compact.message, "This thread's provider or context size is not known yet.");
 
   await server.checkIsolation("complete");
   console.log("PASS: settings, stats, status and compact_now behave on a scratch BB");
