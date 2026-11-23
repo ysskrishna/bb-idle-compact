@@ -30,8 +30,10 @@ Copy speaks in tokens, never dollars: subscription users do not pay per token.
 - When BB's `compactExpiredCache` experiment is on, BB handles Claude Code
   threads on return; the plugin leaves those alone and still compacts before
   expiry.
-- Every hook and UI surface used is `experimental_`. Keep `engines.bb` pinned to
-  the tested BB minor and the SDK pinned exactly.
+- Every hook and UI surface used is `experimental_`. Keep `engines.bb`
+  open-ended (`>=` the oldest tested BB) and the SDK pinned exactly. The daily
+  BB compat run against the latest stable BB reports a release that breaks the
+  plugin; fix forward.
 - The display name is Idle Compact. The package, runtime, and marketplace ID
   are `bb-idle-compact`. BB stores plugin data by ID; an identity change needs
   an explicit data transfer.
