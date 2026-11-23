@@ -25,5 +25,5 @@ jobs:
     with:
       bb-version: ${{ inputs.bb-version }}
       always-test: true
-      codex-version: 0.169.0
+      codex-version: latest
       apt-packages: lsof procps
