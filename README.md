@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/ysskrishna/bb-idle-compact/actions/workflows/ci.yml/badge.svg)](https://github.com/ysskrishna/bb-idle-compact/actions/workflows/ci.yml)
 [![GitHub release](https://img.shields.io/github/v/release/ysskrishna/bb-idle-compact?label=release)](https://github.com/ysskrishna/bb-idle-compact/releases)
+[![BB Marketplace](https://img.shields.io/badge/BB-Marketplace-181717)](https://getbb.app/marketplace/bb-idle-compact)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Author site](https://img.shields.io/badge/author-ysskrishna.space-informational)](https://ysskrishna.space)
 
@@ -31,7 +32,13 @@ Compaction uses BB's own `/compact`, the same as the composer command, and shows
 
 Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases.
 
-Install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases):
+Install from [BB Marketplace](https://getbb.app/marketplace/bb-idle-compact):
+
+```sh
+bb plugin install bb-idle-compact
+```
+
+Or install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases):
 
 ```sh
 bb plugin install git:github.com/ysskrishna/bb-idle-compact@v0.1.0
@@ -116,7 +123,7 @@ The [development guide](docs/development.md) covers the isolated scratch BB, the
 
 - [Releases](https://github.com/ysskrishna/bb-idle-compact/releases) and [issues](https://github.com/ysskrishna/bb-idle-compact/issues)
 - [Security policy](SECURITY.md)
-- [BB Marketplace plans](docs/marketplace.md)
+- [BB Marketplace](https://getbb.app/marketplace/bb-idle-compact) and [listing maintenance](docs/marketplace.md)
 
 ## Built and maintained by
 
