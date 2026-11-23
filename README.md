@@ -38,11 +38,16 @@ Install from [BB Marketplace](https://getbb.app/marketplace/bb-idle-compact):
 bb plugin install bb-idle-compact
 ```
 
-Or install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases):
+<details>
+<summary><b>Install a specific release from GitHub</b></summary>
+
+Install the stable release from [Releases](https://github.com/ysskrishna/bb-idle-compact/releases).
 
 ```sh
 bb plugin install git:github.com/ysskrishna/bb-idle-compact@v0.1.0
 ```
+
+</details>
 
 BB shows the source for confirmation before installing it. The plugin ID is `bb-idle-compact`. Turn the plugin off or on with the switch on its page, **Settings > Idle Compact**.
 
