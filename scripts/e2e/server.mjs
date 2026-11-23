@@ -147,7 +147,7 @@ export async function startScratchServer({ projectName = "Idle Compact smoke", o
       const codex = await run("codex", ["--version"], { timeoutMs: 10_000 });
       console.log(`FIXTURE PROVIDER: ${codex.stdout.trim()}`);
     } catch (cause) {
-      throw new Error("Browser fixtures require Codex on PATH. Install @openai/codex@0.169.0 before running e2e.", {
+      throw new Error("Browser fixtures require the Codex CLI on PATH: npm install --global @openai/codex", {
         cause,
       });
     }
