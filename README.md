@@ -30,7 +30,7 @@ Compaction uses BB's own `/compact`, the same as the composer command, and shows
 
 ## Installation
 
-Requires **BB 0.50.x**. The release badge above reflects published GitHub Releases.
+Requires **BB 0.50.1 or later**. The release badge above reflects published GitHub Releases.
 
 Install from [BB Marketplace](https://getbb.app/marketplace/bb-idle-compact):
 

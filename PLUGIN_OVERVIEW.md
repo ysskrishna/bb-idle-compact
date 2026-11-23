@@ -25,5 +25,5 @@ Cursor threads or read their usage.
 
 ## Requirements
 
-BB 0.50.x. The plugin ID is `bb-idle-compact`. For installation and release
-status, see the [project README](https://github.com/ysskrishna/bb-idle-compact#readme).
+BB 0.50.1 or later. The plugin ID is `bb-idle-compact`. For installation and
+release status, see the [project README](https://github.com/ysskrishna/bb-idle-compact#readme).

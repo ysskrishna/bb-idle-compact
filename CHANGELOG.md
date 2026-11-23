@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
+## [0.1.1]
+
 ### Added
 
-- A weekly "BB compat" workflow that runs the type check and scratch smoke test against any newer BB outside `engines.bb` and reports in a `bb-compat` issue.
+- A "BB compat" workflow that runs the type check and scratch smoke test daily against the latest stable BB and reports a failure in a `bb-compat` issue.
 
 ### Fixed
 
@@ -12,6 +14,7 @@
 
 ### Changed
 
+- `engines.bb` is now open-ended (`>=0.50.1`), so BB releases after 0.50 no longer block installs and updates. The daily BB compat run against the latest stable BB reports a release that breaks the plugin.
 - Moved the GitHub release install into a collapsed "Install a specific release from GitHub" section in the README.
 - Added the live BB Marketplace badge and installation command, and updated the listing documentation.
 

@@ -1,6 +1,6 @@
 {
   "name": "bb-idle-compact",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Compacts large idle Claude Code and Codex threads before their prompt cache expires, so coming back does not re-read the whole context without the cache.",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "url": "https://github.com/ysskrishna/bb-idle-compact/issues"
   },
   "engines": {
-    "bb": ">=0.50.1 <0.51.0",
+    "bb": ">=0.50.1",
     "bbPluginSdk": ">=0.6.157"
   },
   "bb": {
