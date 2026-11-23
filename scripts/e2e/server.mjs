@@ -361,7 +361,9 @@ trace_exporter = "none"
             !(event.type === "provider/unhandled" && event.data.rawType === "account/updated")
           );
         });
-        console.log(`FIXTURE THREAD: status ${thread.status}; events ${events.map((event) => event.type).join(", ") || "none"}`);
+        console.log(
+          `FIXTURE THREAD: status ${thread.status}; events ${events.map((event) => event.type).join(", ") || "none"}`,
+        );
         if (unexpected.length) {
           throw new Error(
             `Fixture unexpectedly produced agent output or provider errors: ${unexpected.map((event) => event.type).join(", ")}`,
