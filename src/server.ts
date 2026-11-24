@@ -15,6 +15,7 @@ import {
   stats,
 } from "./log.js";
 import { evaluate, type Provider, providerOf, type Settings, warmDueAt } from "./policy.js";
+import { createInboxReader } from "./server-inbox.js";
 import { createSettingsStore } from "./server-settings.js";
 import { threadStatus } from "./status.js";
 import { addObservation, estimateTtl, type Observation, observe, summarize } from "./ttl.js";
@@ -41,6 +42,7 @@ interface Running {
 
 export default async function plugin(bb: BbPluginApi) {
   const settings = createSettingsStore(bb);
+  const inbox = createInboxReader(bb);
   const kv = bb.storage.kv;
   /** Compactions this plugin started and has not seen finish. */
   const running = new Map<string, Running>();
@@ -237,6 +239,13 @@ export default async function plugin(bb: BbPluginApi) {
     if (loaded === null) return;
     const verdict = evaluate(loaded.facts, s, Date.now());
     if (!verdict.qualifies || verdict.expired) return;
+    // The compaction turn would bring a filed thread back to Active and notify.
+    // A return compacts it cold instead, once the user is back anyway.
+    if (await inbox.isFiled(threadId)) {
+      bb.log.info(`skipping warm compaction of ${threadId}: filed in Thread Inbox`);
+      changed(threadId);
+      return;
+    }
     await startCompaction(threadId, "warm", loaded.facts.provider, loaded.facts.usedTokens);
   }
 
@@ -329,7 +338,7 @@ export default async function plugin(bb: BbPluginApi) {
       run === undefined && awaiting === null
         ? await loadFacts(bb, threadId, thread.providerId, s, await learnedTtl())
         : null;
-    return threadStatus({
+    const status = threadStatus({
       settings: s,
       idle: thread.status === "idle",
       compactingTokens: run?.tokensBefore ?? null,
@@ -338,6 +347,9 @@ export default async function plugin(bb: BbPluginApi) {
       builtinOffer: loaded?.builtinOffer ?? false,
       now: Date.now(),
     });
+    // The warm timer skips a thread filed in Thread Inbox; do not promise it.
+    if (status.state === "scheduled" && (await inbox.isFiled(threadId))) return { state: "none" };
+    return status;
   }
 
   bb.rpc.register(rpcContract, {

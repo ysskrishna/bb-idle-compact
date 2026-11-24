@@ -23,6 +23,9 @@ Compaction uses BB's own `/compact` and shows in the thread timeline. It keeps a
 summary, not the full history. Cursor is not supported: BB cannot compact
 Cursor threads or read their usage.
 
+Threads you settled, parked, or snoozed in Thread Inbox, and threads inside
+them, are not compacted before expiry, so filing a thread away keeps it quiet.
+
 ## Requirements
 
 BB 0.50.1 or later. The plugin ID is `bb-idle-compact`. For installation and

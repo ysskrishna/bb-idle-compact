@@ -26,6 +26,8 @@ The GIF records a disposable Codex thread in BB 0.50.1, in two parts joined with
 
 Compaction uses BB's own `/compact`, the same as the composer command, and shows in the thread timeline. It keeps a summary, not the full history. Nothing shows below the threshold, while a turn is running, or on providers the plugin does not support.
 
+**Thread Inbox.** A thread you settled, parked, or snoozed in [Thread Inbox](https://github.com/ysskrishna/bb-thread-inbox), or a thread inside one, is not compacted before expiry and shows no "Auto-compacts" pill, because the compaction turn would bring it back to Active and notify you. Compact before sending still applies when you come back to it.
+
 **Providers.** Claude Code reports its cache lifetime. Codex does not, so the plugin starts at 30 minutes and learns a longer one after three cache hits beyond 30 minutes. When BB's own `compactExpiredCache` experiment is on, BB handles Claude Code threads when you return to them; Idle Compact still compacts them before expiry. Cursor is not supported: BB cannot compact Cursor threads or read their usage.
 
 ## Installation
