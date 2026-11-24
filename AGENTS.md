@@ -9,13 +9,21 @@ composer), message queueing, providers, and thread lifecycle. Reuse those; do
 not add keep-warm pings, thread handoff, dollar estimates, per-thread opt-out,
 or Cursor support (BB cannot compact Cursor threads or read their usage).
 
+Warm compaction skips threads filed in Thread Inbox, or inside a filed thread
+(`bb-thread-inbox`'s `listLifecycle` RPC, read in `src/server-inbox.ts`): its
+turn would reopen the thread tree and notify. Thread Inbox is optional: when it
+is not installed, not enabled, or in a broken state nothing counts as filed;
+when it is starting or running but does not answer, the warm compaction is
+skipped.
+
 Copy speaks in tokens, never dollars: subscription users do not pay per token.
 
 ## Architecture
 
 - Browser entry: `app.tsx` (composer pill and settings page). Server entry:
   `src/server.ts`. Pure shared modules: `src/policy.ts`, `src/status.ts`,
-  `src/log.ts`, `src/ttl.ts`, `src/format.ts`, `src/contract.ts`. Server-only
+  `src/log.ts`, `src/ttl.ts`, `src/format.ts`, `src/contract.ts`,
+  `src/inbox.ts`. Server-only
   modules are named `src/server-*.ts`. `biome.json` enforces the boundaries.
 - Decisions are pure functions with unit tests. The server only gathers facts
   from BB and applies the verdict.
