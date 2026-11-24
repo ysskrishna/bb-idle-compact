@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Fixed
+
+- Stopped compacting threads before expiry that are settled, parked, or snoozed in Thread Inbox, or that sit inside such a thread. The compaction turn brought the thread back to Active and raised a notification. Their pill no longer says "Auto-compacts", and Compact before sending still applies on return. Without Thread Inbox nothing changes.
+
 ### Changed
 
 - The scratch e2e seed tolerates any provider notification that BB does not map (`provider/unhandled`), so a newer Codex CLI cannot fail the smoke test. Agent output, turns and provider errors still fail it.
